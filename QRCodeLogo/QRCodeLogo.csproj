@@ -24,6 +24,18 @@
 		<MyOtherFolderFiles Include="QR\**\*" />
 	</ItemGroup>
 
+
+	<ItemGroup>
+	  <None Include="OutputProgram\Debug\net9.0-windows\Logo\logo.png" />
+	  <None Include="OutputProgram\Debug\net9.0-windows\QRCodeLogo.deps.json" />
+	  <None Include="OutputProgram\Debug\net9.0-windows\QRCodeLogo.dll" />
+	  <None Include="OutputProgram\Debug\net9.0-windows\QRCodeLogo.exe" />
+	  <None Include="OutputProgram\Debug\net9.0-windows\QRCodeLogo.pdb" />
+	  <None Include="OutputProgram\Debug\net9.0-windows\QRCodeLogo.runtimeconfig.json" />
+	  <None Include="OutputProgram\Debug\net9.0-windows\QRCoder.dll" />
+	  <None Include="OutputProgram\Debug\net9.0-windows\QR\qr.png" />
+	</ItemGroup>
+
 	<Target Name="CopyCustomFolders" AfterTargets="Build">
 		<Copy SourceFiles="@(MyFolderFiles)" DestinationFolder="$(OutputPath)Logo\" />
 		<Copy SourceFiles="@(MyOtherFolderFiles)" DestinationFolder="$(OutputPath)QR\" />
