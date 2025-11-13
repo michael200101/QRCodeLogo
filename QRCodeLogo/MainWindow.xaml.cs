@@ -8,7 +8,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media.Imaging;
-using static QRCoder.PayloadGenerator;
 
 
 namespace QRCodeLogo
@@ -41,10 +40,6 @@ namespace QRCodeLogo
             InitializeComponent();
             string patte = AppDomain.CurrentDomain.BaseDirectory;
             ProjectPath = AppContext.BaseDirectory;
-            //string hierHin = exePath + "\\text.txt";
-            //File.WriteAllText(hierHin, exePath);
-            //ProjectPath = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName;
-
         }
         public bool ContactToggle { get; set; }
 
@@ -62,7 +57,6 @@ namespace QRCodeLogo
             string telefonMobil = TextTelefonnummer.Text;
             string telefonFestnetz = TextTelefonnummerFest.Text;
             string email = TextEMail.Text;
-            //string adresse = "";
             string adresse = $";;{TextStraße.Text};{TextStadt.Text};;{TextPLZ.Text};{TextLand.Text}";
 
             string vCard = $"BEGIN:VCARD\r\n" +
@@ -104,31 +98,8 @@ namespace QRCodeLogo
             }
             QRCode qrCode = new QRCode(qrCodeData);
 
-
             Bitmap logo = new Bitmap(logoFilePath);
 
-
-            //Bitmap logoOriginal = new Bitmap(logoFilePath);
-
-            //// Zielgröße für das Logo (z. B. 20 % des QR-Codes)
-            //int logoTargetSize = size / 4; // statt /2
-            //float ratio = Math.Min((float)logoTargetSize / logoOriginal.Width, (float)logoTargetSize / logoOriginal.Height);
-            //int newWidth = (int)(logoOriginal.Width * ratio);
-            //int newHeight = (int)(logoOriginal.Height * ratio);
-
-            //// Hochwertig skalieren
-            //Bitmap logoResized = new Bitmap(newWidth, newHeight);
-            //using (Graphics g = Graphics.FromImage(logoResized))
-            //{
-
-            //    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-            //    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-            //    g.DrawImage(logoOriginal, new System.Drawing.Rectangle(0, 0, newWidth, newHeight));
-
-            //}
-
-
-            // QR-Code mit integriertem Logo generieren
             Bitmap qrCodeImage = qrCode.GetGraphic(
                 100,                      // Pixel pro Modul
                 System.Drawing.Color.Black, // Vordergrundfarbe
@@ -155,17 +126,14 @@ namespace QRCodeLogo
             using (MemoryStream ms = new MemoryStream(byteArray))
             {
                 bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad; // wichtig, damit der Stream nachher freigegeben wird
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.StreamSource = ms;
                 bitmap.EndInit();
             }
 
             // Image-Source setzen
 
-            if (File.Exists($"{ProjectPath}QR\\qr.png"))
-            {
-                File.Delete($"{ProjectPath}QR\\qr.png"); // löscht die alte Datei
-            }
+            
             var Date = DateTime.Now.ToString().Replace(" ", "_").Replace(".","_").Replace(":","_");
             string fileName="";
 
