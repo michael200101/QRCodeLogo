@@ -7,7 +7,14 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Windows.Media.Imaging;
+using System.Windows;
+using System.Runtime.InteropServices;
+using PixelFormat = System.Windows.Media.PixelFormat;
 
 
 namespace QRCodeLogo
@@ -25,9 +32,9 @@ namespace QRCodeLogo
         }
         public enum Technologia
         {
-            none,
-            Wep,
-            Wpa
+            NONE,
+            WEP,
+            WPA
         }
         public bool contact {  get; set; }
         public bool wifi { get; set; }
@@ -40,61 +47,72 @@ namespace QRCodeLogo
             InitializeComponent();
             string patte = AppDomain.CurrentDomain.BaseDirectory;
             ProjectPath = AppContext.BaseDirectory;
+            
+
         }
         public bool ContactToggle { get; set; }
 
+        QRCodeGenerator mQrGenerator = new QRCodeGenerator();
+
         public string ProjectPath { get; set; }
+
+        public string mName {  get; set; }
+        public string mSsid {  get; set; }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
 
 
 
-            string vorname = TextVorname.Text;
-            string nachname = TextNachname.Text;
-            string name = $"{vorname} {nachname}";
-            string firma = TextFirma.Text;
-            string titel = TextTitel.Text;
-            string telefonMobil = TextTelefonnummer.Text;
-            string telefonFestnetz = TextTelefonnummerFest.Text;
-            string email = TextEMail.Text;
-            string adresse = $";;{TextStraße.Text};{TextStadt.Text};;{TextPLZ.Text};{TextLand.Text}";
-
-            string vCard = $"BEGIN:VCARD\r\n" +
-                           $"VERSION:3.0\r\n" +
-                           $"N:{nachname};{vorname};;;\r\n" +
-                           $"FN:{name}\r\n" +
-                           $"ORG:{firma}\r\n" +
-                           $"TITLE:{titel}\r\n" +
-                           $"TEL;TYPE=CELL:{telefonMobil}\r\n" +
-                           $"TEL;TYPE=HOME:{telefonFestnetz}\r\n" +
-                           $"EMAIL:{email}\r\n" +
-                           $"ADR;TYPE=WORK:{adresse}\r\n" +
-                           $"END:VCARD";
+            
 
 
-            string ssid= SSID.Text;
-            string password = Passwort.Text;
+            
 
-            string Wifi= $"WIFI:T: {Technologi.ToString()}; S: {ssid}; P: {password};" ;
+
+
             Output.Source = null;
             string logoFilePath = $"{ProjectPath}Logo\\logo.png";
             string QrText = Input.Text;
             var size = 500;
 
-            QRCodeGenerator qrGenerator = new QRCodeGenerator();
-            QRCodeData qrCodeData = qrGenerator.CreateQrCode(QrText, QRCodeGenerator.ECCLevel.H);
+            QRCodeData qrCodeData = mQrGenerator.CreateQrCode(QrText, QRCodeGenerator.ECCLevel.H);
 
             if (Type == Types.Contact)
             {
-                 qrCodeData = qrGenerator.CreateQrCode(vCard, QRCodeGenerator.ECCLevel.H, true);
+                string vorname = TextVorname.Text;
+                string nachname = TextNachname.Text;
+                mName = $"{vorname} {nachname}";
+                string firma = TextFirma.Text;
+                string titel = TextTitel.Text;
+                string telefonMobil = TextTelefonnummer.Text;
+                string telefonFestnetz = TextTelefonnummerFest.Text;
+                string email = TextEMail.Text;
+                string adresse = $";;{TextStraße.Text};{TextStadt.Text};;{TextPLZ.Text};{TextLand.Text}";
+
+                string vCard = $"BEGIN:VCARD\r\n" +
+                               $"VERSION:3.0\r\n" +
+                               $"N:{nachname};{vorname};;;\r\n" +
+                               $"FN:{mName}\r\n" +
+                               $"ORG:{firma}\r\n" +
+                               $"TITLE:{titel}\r\n" +
+                               $"TEL;TYPE=CELL:{telefonMobil}\r\n" +
+                               $"TEL;TYPE=HOME:{telefonFestnetz}\r\n" +
+                               $"EMAIL:{email}\r\n" +
+                               $"ADR;TYPE=WORK:{adresse}\r\n" +
+                               $"END:VCARD";
+                qrCodeData = mQrGenerator.CreateQrCode(vCard, QRCodeGenerator.ECCLevel.H, true);
             }
             else if (Type == Types.Normal)
             {
-                 qrCodeData = qrGenerator.CreateQrCode(QrText, QRCodeGenerator.ECCLevel.H, true);
+                 qrCodeData = mQrGenerator.CreateQrCode(QrText, QRCodeGenerator.ECCLevel.H, true);
             }
             else if (Type == Types.Wifi)
             {
-                 qrCodeData = qrGenerator.CreateQrCode(Wifi, QRCodeGenerator.ECCLevel.H, true);
+                mSsid = SSID.Text;
+                string password = Passwort.Text;
+
+                string Wifi = $"WIFI:T:{Technologi.ToString()};S:{mSsid};P:{password};";
+                qrCodeData = mQrGenerator.CreateQrCode(Wifi, QRCodeGenerator.ECCLevel.H, true);
             }
             QRCode qrCode = new QRCode(qrCodeData);
 
@@ -115,40 +133,43 @@ namespace QRCodeLogo
             byte[] byteArray;
             using (MemoryStream ms = new MemoryStream())
             {
-                qrCodeImage.Save(ms, ImageFormat.Png);
+                qrCodeImage.Save(ms, ImageFormat.Bmp);
                 byteArray = ms.ToArray();
             }
-            string base64String = Convert.ToBase64String(byteArray);
+            //string base64String = Convert.ToBase64String(byteArray);
 
 
+            var bitmap=BitmapToBitmapSource(qrCodeImage);
 
-            BitmapImage bitmap = new BitmapImage();
-            using (MemoryStream ms = new MemoryStream(byteArray))
-            {
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.StreamSource = ms;
-                bitmap.EndInit();
-            }
+            //BitmapImage bitmap = new BitmapImage();
+            //using (MemoryStream ms = new MemoryStream(byteArray))
+            //{
+            //    bitmap.BeginInit();
+            //    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            //    bitmap.StreamSource = ms;
+            //    bitmap.EndInit();
+            //}
 
             // Image-Source setzen
 
-            
+
             var Date = DateTime.Now.ToString().Replace(" ", "_").Replace(".","_").Replace(":","_");
             string fileName="";
 
             if (contact == true)
             {
-                fileName = "Contact_" + name + Date.ToString();
+                fileName = "Contact_" + mName + Date.ToString();
             }
             else if (wifi == true)
             {
-                fileName = "Wifi_" + ssid + Date.ToString();
+                fileName = "Wifi_" + mSsid + Date.ToString();
             }
             else
                 fileName = Date;
 
-                File.WriteAllBytes($"{ProjectPath}QR\\{fileName}.png", byteArray);
+
+            //SaveBitmapSourceAsPng(bitmap, $"{ProjectPath}QR\\{fileName}.png");
+            File.WriteAllBytes($"{ProjectPath}QR\\{fileName}.png", byteArray);
             Output.Source = bitmap;
 
 
@@ -229,13 +250,67 @@ namespace QRCodeLogo
         {
             var radio = sender as RadioButton;
 
-            if (radio.Content == "WPA/WPA2/WPA3")
-                Technologi = Technologia.Wpa;
-            else if (radio.Content == "WEP")
-                Technologi = Technologia.Wep;
-            else if (radio.Content == "None")
-                Technologi = Technologia.none;
+            if (radio.Content.ToString() == "WPA/WPA2/WPA3")
+                Technologi = Technologia.WPA;
+            else if (radio.Content.ToString() == "WEP")
+                Technologi = Technologia.WEP;
+            else if (radio.Content.ToString() == "None")
+                Technologi = Technologia.NONE;
 
+        }
+        public static void SaveBitmapSourceAsPng(BitmapSource bitmapSource, string filePath)
+        {
+            using (var fs = new FileStream(filePath, FileMode.Create))
+            {
+                var encoder = new BmpBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
+                encoder.Save(fs);
+            }
+        }
+
+        public static BitmapSource BitmapToBitmapSource(Bitmap bitmap)
+        {
+            var rect = new Rectangle(0, 0, bitmap.Width, bitmap.Height);
+            var data = bitmap.LockBits(rect, ImageLockMode.ReadOnly, bitmap.PixelFormat);
+
+            try
+            {
+                PixelFormat format;
+                int bytesPerPixel;
+
+                switch (bitmap.PixelFormat)
+                {
+                    case System.Drawing.Imaging.PixelFormat.Format32bppArgb:
+                        format = PixelFormats.Bgra32;
+                        bytesPerPixel = 4;
+                        break;
+                    case System.Drawing.Imaging.PixelFormat.Format24bppRgb:
+                        format = PixelFormats.Bgr24;
+                        bytesPerPixel = 3;
+                        break;
+                    default:
+                        throw new NotSupportedException("Unsupported pixel format");
+                }
+
+                var bitmapSource = BitmapSource.Create(
+                    bitmap.Width,
+                    bitmap.Height,
+                    96, // DPI X
+                    96, // DPI Y
+                    format,
+                    null,
+                    data.Scan0,
+                    data.Stride * bitmap.Height,
+                    data.Stride
+                );
+
+                bitmapSource.Freeze(); // Optional: makes it thread-safe
+                return bitmapSource;
+            }
+            finally
+            {
+                bitmap.UnlockBits(data);
+            }
         }
     }
 }

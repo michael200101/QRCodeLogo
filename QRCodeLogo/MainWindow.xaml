@@ -44,7 +44,7 @@
             
             
             <Border BorderThickness="2" BorderBrush="Black" Grid.Row="4" >
-                <TextBox TextWrapping="Wrap" MaxLines="30" MaxLength="1273" x:Name="Input" Grid.Row="2" Grid.Column="0" TextChanged="Input_TextChanged"/>
+                <TextBox FontSize="16" TextWrapping="Wrap" MaxLines="30" MaxLength="1273" x:Name="Input" Grid.Row="2" Grid.Column="0" TextChanged="Input_TextChanged"/>
             </Border>
             <StackPanel x:Name="Contact" Grid.Row="4" Visibility="Hidden">
                 <Grid Margin="5">
