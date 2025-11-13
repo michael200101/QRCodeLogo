@@ -9,11 +9,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Windows.Media.Imaging;
-using System.Windows;
-using System.Runtime.InteropServices;
 using PixelFormat = System.Windows.Media.PixelFormat;
 
 
@@ -45,10 +40,7 @@ namespace QRCodeLogo
         public MainWindow()
         {
             InitializeComponent();
-            string patte = AppDomain.CurrentDomain.BaseDirectory;
             ProjectPath = AppContext.BaseDirectory;
-            
-
         }
         public bool ContactToggle { get; set; }
 
@@ -60,16 +52,6 @@ namespace QRCodeLogo
         public string mSsid {  get; set; }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-
-
-
-            
-
-
-            
-
-
-
             Output.Source = null;
             string logoFilePath = $"{ProjectPath}Logo\\logo.png";
             string QrText = Input.Text;
@@ -129,28 +111,15 @@ namespace QRCodeLogo
             );
 
 
-            // Convert the QR code with the logo to a Base64 string
             byte[] byteArray;
             using (MemoryStream ms = new MemoryStream())
             {
                 qrCodeImage.Save(ms, ImageFormat.Bmp);
                 byteArray = ms.ToArray();
             }
-            //string base64String = Convert.ToBase64String(byteArray);
 
 
             var bitmap=BitmapToBitmapSource(qrCodeImage);
-
-            //BitmapImage bitmap = new BitmapImage();
-            //using (MemoryStream ms = new MemoryStream(byteArray))
-            //{
-            //    bitmap.BeginInit();
-            //    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            //    bitmap.StreamSource = ms;
-            //    bitmap.EndInit();
-            //}
-
-            // Image-Source setzen
 
 
             var Date = DateTime.Now.ToString().Replace(" ", "_").Replace(".","_").Replace(":","_");
@@ -258,15 +227,7 @@ namespace QRCodeLogo
                 Technologi = Technologia.NONE;
 
         }
-        public static void SaveBitmapSourceAsPng(BitmapSource bitmapSource, string filePath)
-        {
-            using (var fs = new FileStream(filePath, FileMode.Create))
-            {
-                var encoder = new BmpBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
-                encoder.Save(fs);
-            }
-        }
+       
 
         public static BitmapSource BitmapToBitmapSource(Bitmap bitmap)
         {
