@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>logo.ico</ApplicationIcon>
+    <BaseOutputPath>C:\Users\mjanzen\source\repos\QRCodeLogo\QRCodeLogo\OutputProgram</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
