@@ -360,3 +360,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+
+# --- Custom overrides ---
+# Allow bin/Debug folders to be committed
+!bin/
+!bin/Debug/
+!**/bin/Debug/
