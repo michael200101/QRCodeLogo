@@ -366,4 +366,3 @@ FodyWeavers.xsd
 # Allow bin/Debug folders to be committed
 !bin/
 !bin/Debug/
-!**/bin/Debug/net9.0-windows
