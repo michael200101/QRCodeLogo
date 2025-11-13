@@ -363,6 +363,6 @@ FodyWeavers.xsd
 
 
 # --- Custom overrides ---
-# Allow bin/Debug folders to be committed
 !bin/
 !bin/Debug/
+!**/bin/Debug/
