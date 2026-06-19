@@ -54,7 +54,9 @@ namespace QRCodeLogo
 
         public string mName {  get; set; } = "";
         public string mSsid {  get; set; } = "";
-        public int Logosize { get; set; } = 5;
+
+        // Logo edge length as a percentage of the QR code width (set by the slider).
+        private double LogoSizePercent = 20;
 
         public ObservableCollection<LogoItem> Logos { get; } = new ObservableCollection<LogoItem>();
 
@@ -178,7 +180,8 @@ namespace QRCodeLogo
                 qrBase.MakeTransparent(System.Drawing.Color.White);
 
             // Square box reserved for the logo, centered on the QR code.
-            int logoSize = qrBase.Width / Logosize;
+            // Driven by the slider: a percentage of the QR width.
+            int logoSize = (int)(qrBase.Width * (LogoSizePercent / 100.0));
             int pos = (qrBase.Width - logoSize) / 2;
             int border = 10;
 
@@ -394,17 +397,13 @@ namespace QRCodeLogo
             mTransparent = ((CheckBox)sender).IsChecked == true;
         }
 
-        private void RadioButton_Checked_1(object sender, RoutedEventArgs e)
+        private void LogoSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            var radioButton = (RadioButton)sender;
-            string content = radioButton.Content?.ToString() ?? "";
-            if (content == "Groß")
-                Logosize = 4;
-            else if (content == "Mittel")
-                Logosize = 5;
-            else if (content.StartsWith("Sehr Groß"))
-                Logosize = 3;
-
+            LogoSizePercent = e.NewValue;
+            // The label is declared after the slider in XAML, so it may not exist
+            // yet during the initial value assignment in InitializeComponent.
+            if (LogoSizeLabel != null)
+                LogoSizeLabel.Text = $"{Math.Round(LogoSizePercent)} % der QR-Breite";
         }
         bool mLogo = false;
 

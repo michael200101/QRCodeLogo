@@ -5,7 +5,23 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QRCodeLogo"
         mc:Ignorable="d"
-        Title="MainWindow" Height="800" Width="1000">
+        Title="MainWindow" Height="800" Width="1000"
+        Background="#FF1E1E1E">
+    <Window.Resources>
+        <!-- Light text so labels/options stay readable on the dark background. -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#FFEDEDED"/>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="#FFEDEDED"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#FFEDEDED"/>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#FFEDEDED"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
@@ -98,12 +114,14 @@
             <RadioButton Grid.Row="3" GroupName="1" Content="Wi-Fi" Checked="Normal_Checked"/>
             <CheckBox Grid.Row="4" Grid.Column="0" Content="Hintergrund Transparent?" Checked="CheckBox_Checked" Unchecked="CheckBox_Checked"/>
             <CheckBox x:Name="LogoCheckBox" Grid.Row="4" Grid.Column="1" Content="Logo verwenden?" Checked="CheckBox_Checked_1" Unchecked="CheckBox_Checked_1"/>
-            <RadioButton Grid.Row="1" Grid.Column="1" GroupName="2" Content="Mittel" Checked="RadioButton_Checked_1" IsChecked="True"/>
-            <RadioButton Grid.Row="2" Grid.Column="1" GroupName="2" Content="Groß" Checked="RadioButton_Checked_1" />
-            <RadioButton Grid.Row="3" Grid.Column="1" GroupName="2" Content="Sehr Groß(Vorsicht)" Checked="RadioButton_Checked_1" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="Logo-Größe" FontWeight="Bold" VerticalAlignment="Center"/>
+            <Slider x:Name="LogoSizeSlider" Grid.Row="1" Grid.Column="1" Minimum="5" Maximum="60" Value="20"
+                    TickFrequency="5" TickPlacement="BottomRight" VerticalAlignment="Center"
+                    ValueChanged="LogoSizeSlider_ValueChanged"/>
+            <TextBlock x:Name="LogoSizeLabel" Grid.Row="2" Grid.Column="1" Text="20 % der QR-Breite" VerticalAlignment="Center"/>
 
 
-            <Border BorderThickness="2" BorderBrush="Black" Grid.Row="5" Grid.ColumnSpan="2">
+            <Border BorderThickness="2" BorderBrush="#FF666666" Grid.Row="5" Grid.ColumnSpan="2">
                 <TextBox FontSize="16" TextWrapping="Wrap" MaxLines="30" MaxLength="1273" x:Name="Input" Grid.Row="2" Grid.Column="0"  TextChanged="Input_TextChanged" />
             </Border>
             <StackPanel x:Name="Contact" Grid.Row="5" Visibility="Hidden">
