@@ -366,3 +366,4 @@ FodyWeavers.xsd
 !bin/
 !bin/Debug/
 !**/bin/Debug/
+/QRCodeLogo/bin/Debug
