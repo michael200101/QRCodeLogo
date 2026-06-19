@@ -1,0 +1,17 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Light theme palette. Same keys as Dark.xaml. -->
+    <SolidColorBrush x:Key="WindowBg"  Color="#FFF3F4F7"/>
+    <SolidColorBrush x:Key="SurfaceBg" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="InputBg"   Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="BorderClr" Color="#FFD7DBE2"/>
+    <SolidColorBrush x:Key="TextClr"   Color="#FF1B1B20"/>
+    <SolidColorBrush x:Key="MutedClr"  Color="#FF6B7280"/>
+    <SolidColorBrush x:Key="Accent"      Color="#FF3B7DF0"/>
+    <SolidColorBrush x:Key="AccentHover" Color="#FF2F6BD8"/>
+    <SolidColorBrush x:Key="OnAccent"    Color="#FFFFFFFF"/>
+
+    <SolidColorBrush x:Key="QrCardBg" Color="#FFFFFFFF"/>
+
+</ResourceDictionary>
