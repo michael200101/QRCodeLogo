@@ -26,7 +26,58 @@
             <Button Content="QR-Ordner öffnen" Click="Button_Click_2" Grid.Column="1" Margin="3"/>
         </Grid>
 
-        <Image x:Name="Output" Grid.Row="1" Grid.Column="1" Source="/QR/qr.png"/>
+        <Grid Grid.Row="1" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Image x:Name="Output" Source="/QR/qr.png"/>
+
+            <Border Grid.Row="1" BorderBrush="#FFCCCCCC" BorderThickness="1" Margin="3" Padding="4">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Logo auswählen:" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="Aktualisieren" Padding="6,1" Click="RefreshLogos_Click"/>
+                    </Grid>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  MaxHeight="150" Margin="0,4,0,0">
+                        <ItemsControl x:Name="LogoGallery">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Click="Logo_Click" Margin="3" Padding="0"
+                                            BorderThickness="0" Background="Transparent" Cursor="Hand"
+                                            ToolTip="{Binding Name}">
+                                        <Border CornerRadius="4" BorderThickness="3" Padding="2">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                            <Setter Property="BorderBrush" Value="#FF1E90FF"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <Image Source="{Binding Thumbnail}" Width="64" Height="64" Stretch="Uniform"/>
+                                        </Border>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
 
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
@@ -46,7 +97,7 @@
             <RadioButton Grid.Row="2" GroupName="1" Content="Contact" Checked="Normal_Checked"/>
             <RadioButton Grid.Row="3" GroupName="1" Content="Wi-Fi" Checked="Normal_Checked"/>
             <CheckBox Grid.Row="4" Grid.Column="0" Content="Hintergrund Transparent?" Checked="CheckBox_Checked" Unchecked="CheckBox_Checked"/>
-            <CheckBox Grid.Row="4" Grid.Column="1" Content="Logo verwenden?" Checked="CheckBox_Checked_1" Unchecked="CheckBox_Checked_1"/>
+            <CheckBox x:Name="LogoCheckBox" Grid.Row="4" Grid.Column="1" Content="Logo verwenden?" Checked="CheckBox_Checked_1" Unchecked="CheckBox_Checked_1"/>
             <RadioButton Grid.Row="1" Grid.Column="1" GroupName="2" Content="Mittel" Checked="RadioButton_Checked_1" IsChecked="True"/>
             <RadioButton Grid.Row="2" Grid.Column="1" GroupName="2" Content="Groß" Checked="RadioButton_Checked_1" />
             <RadioButton Grid.Row="3" Grid.Column="1" GroupName="2" Content="Sehr Groß(Vorsicht)" Checked="RadioButton_Checked_1" />

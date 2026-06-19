@@ -1,9 +1,11 @@
 ﻿using QRCoder;
-using System.Data.SqlTypes;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -41,6 +43,8 @@ namespace QRCodeLogo
         {
             InitializeComponent();
             ProjectPath = AppContext.BaseDirectory;
+            LogoGallery.ItemsSource = Logos;
+            LoadLogos();
         }
         public bool ContactToggle { get; set; }
 
@@ -51,10 +55,58 @@ namespace QRCodeLogo
         public string mName {  get; set; } = "";
         public string mSsid {  get; set; } = "";
         public int Logosize { get; set; } = 5;
+
+        public ObservableCollection<LogoItem> Logos { get; } = new ObservableCollection<LogoItem>();
+
+        private LogoItem? mSelectedLogo;
+
+        private static readonly string[] LogoExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
+
+        private string LogoFolder => Path.Combine(ProjectPath, "Logo");
+
+        private void LoadLogos()
+        {
+            Logos.Clear();
+            mSelectedLogo = null;
+
+            if (!Directory.Exists(LogoFolder))
+                return;
+
+            var files = Directory.EnumerateFiles(LogoFolder)
+                                  .Where(f => LogoExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                                  .OrderBy(f => Path.GetFileName(f));
+
+            foreach (var file in files)
+                Logos.Add(new LogoItem(file));
+
+            // Pre-select logo.png if present, otherwise the first logo found.
+            var initial = Logos.FirstOrDefault(l => string.Equals(l.Name, "logo.png", StringComparison.OrdinalIgnoreCase))
+                          ?? Logos.FirstOrDefault();
+            if (initial != null)
+                SelectLogo(initial);
+        }
+
+        private void SelectLogo(LogoItem item)
+        {
+            foreach (var logo in Logos)
+                logo.IsSelected = ReferenceEquals(logo, item);
+            mSelectedLogo = item;
+        }
+
+        private void Logo_Click(object sender, RoutedEventArgs e)
+        {
+            var item = (LogoItem)((Button)sender).DataContext;
+            SelectLogo(item);
+            LogoCheckBox.IsChecked = true; // picking a logo implies you want to use it
+        }
+
+        private void RefreshLogos_Click(object sender, RoutedEventArgs e)
+        {
+            LoadLogos();
+        }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Output.Source = null;
-            string logoFilePath = $"{ProjectPath}Logo\\logo.png";
             string QrText = Input.Text;
 
             QRCodeData qrCodeData = mQrGenerator.CreateQrCode(QrText, QRCodeGenerator.ECCLevel.H);
@@ -98,17 +150,22 @@ namespace QRCodeLogo
             }
             QRCode qrCode = new QRCode(qrCodeData);
 
-            Bitmap logo = new Bitmap(logoFilePath);
-
-            //Bitmap qrCodeImage = qrCode.GetGraphic(
-            //    100,                      // Pixel pro Modul
-            //    System.Drawing.Color.Black, // Vordergrundfarbe
-            //    System.Drawing.Color.White, // Hintergrundfarbe
-            //    logo,                    // Dein Logo-Bitmap
-            //    iconSizePercent: 20,     // Logo-Größe in % des QR-Codes
-            //    iconBorderWidth: 1,      // Weißer Rand um das Logo
-            //    drawQuietZones: true     // Ruhezone um den QR-Code
-            //);
+            // Load the chosen logo only if the user actually wants one.
+            Bitmap? logo = null;
+            if (mLogo)
+            {
+                string? logoPath = mSelectedLogo?.Path;
+                if (string.IsNullOrEmpty(logoPath) || !File.Exists(logoPath))
+                {
+                    MessageBox.Show(
+                        "Bitte zuerst ein Logo aus der Galerie auswählen.",
+                        "Kein Logo ausgewählt",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+                logo = new Bitmap(logoPath);
+            }
 
             Bitmap qrBase = qrCode.GetGraphic(
                 100,
@@ -119,50 +176,53 @@ namespace QRCodeLogo
 
             if(mTransparent)
                 qrBase.MakeTransparent(System.Drawing.Color.White);
-            //for (int y = 0; y < qrBase.Height; y++)
-            //{
-            //    for (int x = 0; x < qrBase.Width; x++)
-            //    {
-            //        var pixel = qrBase.GetPixel(x, y);
 
-            //        if (pixel.R == 255 && pixel.G == 255 && pixel.B == 255)
-            //        {
-            //            qrBase.SetPixel(x, y, System.Drawing.Color.Transparent);
-            //        }
-            //    }
-            //}
+            // Square box reserved for the logo, centered on the QR code.
             int logoSize = qrBase.Width / Logosize;
             int pos = (qrBase.Width - logoSize) / 2;
             int border = 10;
-            if (mTransparent)
-                if (mLogo)
-                    for (int y = pos - border; y < pos + logoSize + border; y++)
+
+            // Fit the logo inside the square box while keeping its aspect ratio,
+            // so non-square logos are no longer stretched or squished.
+            int drawX = pos, drawY = pos, drawW = logoSize, drawH = logoSize;
+            if (logo != null)
+            {
+                float ratio = Math.Min((float)logoSize / logo.Width, (float)logoSize / logo.Height);
+                drawW = Math.Max(1, (int)Math.Round(logo.Width * ratio));
+                drawH = Math.Max(1, (int)Math.Round(logo.Height * ratio));
+                drawX = pos + (logoSize - drawW) / 2;
+                drawY = pos + (logoSize - drawH) / 2;
+            }
+
+            if (mTransparent && logo != null)
+                for (int y = drawY - border; y < drawY + drawH + border; y++)
+                {
+                    for (int x = drawX - border; x < drawX + drawW + border; x++)
                     {
-                        for (int x = pos - border; x < pos + logoSize + border; x++)
+                        if (x >= 0 && x < qrBase.Width && y >= 0 && y < qrBase.Height)
                         {
-                            if (x >= 0 && x < qrBase.Width && y >= 0 && y < qrBase.Height)
-                            {
-                                qrBase.SetPixel(x, y, System.Drawing.Color.Transparent);
-                            }
+                            qrBase.SetPixel(x, y, System.Drawing.Color.Transparent);
                         }
                     }
+                }
             Bitmap final = new Bitmap(qrBase.Width, qrBase.Height);
                 using (Graphics g = Graphics.FromImage(final))
                 {
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                     g.DrawImage(qrBase, 0, 0);
 
-                     logoSize = qrBase.Width / Logosize;
-                     pos = (qrBase.Width - logoSize) / 2;
-                    if(mLogo)
+                    if (logo != null)
+                    {
                         if (!mTransparent)
                             using (System.Drawing.Brush WhiteBrush = new SolidBrush(System.Drawing.Color.White))
                             {
-                                g.FillRectangle(WhiteBrush, pos, pos, logoSize, logoSize);
+                                g.FillRectangle(WhiteBrush, drawX - border, drawY - border, drawW + 2 * border, drawH + 2 * border);
                             }
 
-                    if(mLogo)
-                    g.DrawImage(logo, pos, pos, logoSize, logoSize);
+                        g.DrawImage(logo, drawX, drawY, drawW, drawH);
+                    }
                 }
+            logo?.Dispose();
 
 
 
@@ -331,7 +391,7 @@ namespace QRCodeLogo
 
         private void CheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            mTransparent= !mTransparent;
+            mTransparent = ((CheckBox)sender).IsChecked == true;
         }
 
         private void RadioButton_Checked_1(object sender, RoutedEventArgs e)
@@ -350,7 +410,60 @@ namespace QRCodeLogo
 
         private void CheckBox_Checked_1(object sender, RoutedEventArgs e)
         {
-            mLogo = !mLogo;
+            mLogo = ((CheckBox)sender).IsChecked == true;
+        }
+    }
+
+    /// <summary>
+    /// One selectable logo shown in the gallery. <see cref="IsSelected"/> drives the
+    /// highlight in the UI; <see cref="Thumbnail"/> is decoded small and without locking
+    /// the file so the full-size image can still be opened during generation.
+    /// </summary>
+    public class LogoItem : INotifyPropertyChanged
+    {
+        private bool mIsSelected;
+
+        public LogoItem(string path)
+        {
+            Path = path;
+            Name = System.IO.Path.GetFileName(path);
+            Thumbnail = LoadThumbnail(path);
+        }
+
+        public string Path { get; }
+        public string Name { get; }
+        public ImageSource? Thumbnail { get; }
+
+        public bool IsSelected
+        {
+            get => mIsSelected;
+            set
+            {
+                if (mIsSelected == value) return;
+                mIsSelected = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+            }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private static ImageSource? LoadThumbnail(string path)
+        {
+            try
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad; // read fully, then release the file
+                bitmap.DecodePixelWidth = 96;                  // small thumbnail keeps memory low
+                bitmap.UriSource = new Uri(path);
+                bitmap.EndInit();
+                bitmap.Freeze();
+                return bitmap;
+            }
+            catch
+            {
+                return null; // skip unreadable/corrupt images rather than crash the gallery
+            }
         }
     }
 }
