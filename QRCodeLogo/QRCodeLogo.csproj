@@ -24,7 +24,10 @@
 	</ItemGroup>
 
 
-	<Target Name="CopyCustomFolders" AfterTargets="Build">
+	<!-- Copy the sample Logo/QR content next to the build output for local dev runs.
+	     Skipped for single-file publish so the published folder contains only the .exe;
+	     the app itself creates the folders at runtime. -->
+	<Target Name="CopyCustomFolders" AfterTargets="Build" Condition="'$(PublishSingleFile)' != 'true'">
 		<Copy SourceFiles="@(MyFolderFiles)" DestinationFolder="$(OutputPath)Logo\" />
 		<Copy SourceFiles="@(MyOtherFolderFiles)" DestinationFolder="$(OutputPath)QR\" />
 	</Target>

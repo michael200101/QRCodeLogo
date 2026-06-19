@@ -49,6 +49,12 @@ namespace QRCodeLogo
         {
             InitializeComponent();
             ProjectPath = AppContext.BaseDirectory;
+
+            // Make sure the Logo and QR folders exist next to the executable,
+            // wherever it is run from (important for the single-file build).
+            Directory.CreateDirectory(LogoFolder);
+            Directory.CreateDirectory(Path.Combine(ProjectPath, "QR"));
+
             LogoGallery.ItemsSource = Logos;
             LoadLogos();
 
@@ -87,7 +93,8 @@ namespace QRCodeLogo
 
         // ---- Theme ----
 
-        private void ToggleTheme_Click(object sender, RoutedEventArgs e) => ApplyTheme(!mIsDark);
+        private void ToggleTheme_Click(object sender, RoutedEventArgs e)
+            => ApplyTheme(!mIsDark);
 
         private void ApplyTheme(bool dark)
         {
