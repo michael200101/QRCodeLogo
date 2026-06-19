@@ -48,15 +48,14 @@ namespace QRCodeLogo
 
         public string ProjectPath { get; set; }
 
-        public string mName {  get; set; }
-        public string mSsid {  get; set; }
+        public string mName {  get; set; } = "";
+        public string mSsid {  get; set; } = "";
         public int Logosize { get; set; } = 5;
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Output.Source = null;
             string logoFilePath = $"{ProjectPath}Logo\\logo.png";
             string QrText = Input.Text;
-            var size = 500;
 
             QRCodeData qrCodeData = mQrGenerator.CreateQrCode(QrText, QRCodeGenerator.ECCLevel.H);
 
@@ -236,7 +235,7 @@ namespace QRCodeLogo
 
         private void Normal_Checked(object sender, RoutedEventArgs e)
         {
-            var radio = sender as RadioButton;
+            var radio = (RadioButton)sender;
 
             if (radio.Content.ToString() == "Normal")
             {
@@ -274,7 +273,7 @@ namespace QRCodeLogo
 
         private void RadioButton_Checked(object sender, RoutedEventArgs e)
         {
-            var radio = sender as RadioButton;
+            var radio = (RadioButton)sender;
 
             if (radio.Content.ToString() == "WPA/WPA2/WPA3")
                 Technologi = Technologia.WPA;
@@ -294,17 +293,14 @@ namespace QRCodeLogo
             try
             {
                 PixelFormat format;
-                int bytesPerPixel;
 
                 switch (bitmap.PixelFormat)
                 {
                     case System.Drawing.Imaging.PixelFormat.Format32bppArgb:
                         format = PixelFormats.Bgra32;
-                        bytesPerPixel = 4;
                         break;
                     case System.Drawing.Imaging.PixelFormat.Format24bppRgb:
                         format = PixelFormats.Bgr24;
-                        bytesPerPixel = 3;
                         break;
                     default:
                         throw new NotSupportedException("Unsupported pixel format");
@@ -341,11 +337,12 @@ namespace QRCodeLogo
         private void RadioButton_Checked_1(object sender, RoutedEventArgs e)
         {
             var radioButton = (RadioButton)sender;
-            if (radioButton.Content.ToString() == "Groß")
+            string content = radioButton.Content?.ToString() ?? "";
+            if (content == "Groß")
                 Logosize = 4;
-            else if(radioButton.Content.ToString() == "Mittel")
+            else if (content == "Mittel")
                 Logosize = 5;
-            else if(radioButton.Content.ToString().StartsWith("Sehr Groß"))
+            else if (content.StartsWith("Sehr Groß"))
                 Logosize = 3;
 
         }
