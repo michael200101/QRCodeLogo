@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QRCodeLogo"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="1000">
+        Title="MainWindow" Height="800" Width="1000">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
@@ -34,19 +34,28 @@
                 <RowDefinition Height="30"/>
                 <RowDefinition Height="30"/>
                 <RowDefinition Height="30"/>
+                <RowDefinition Height="30"/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
 
-            <Label Content="Alles was hier steht wird zum QR Code" HorizontalContentAlignment="Center"/>
             <RadioButton Grid.Row="1" GroupName="1" Content="Normal" Checked="Normal_Checked" />
             <RadioButton Grid.Row="2" GroupName="1" Content="Contact" Checked="Normal_Checked"/>
             <RadioButton Grid.Row="3" GroupName="1" Content="Wi-Fi" Checked="Normal_Checked"/>
-            
-            
-            <Border BorderThickness="2" BorderBrush="Black" Grid.Row="4" >
-                <TextBox FontSize="16" TextWrapping="Wrap" MaxLines="30" MaxLength="1273" x:Name="Input" Grid.Row="2" Grid.Column="0" TextChanged="Input_TextChanged"/>
+            <CheckBox Grid.Row="4" Grid.Column="0" Content="Hintergrund Transparent?" Checked="CheckBox_Checked" Unchecked="CheckBox_Checked"/>
+            <CheckBox Grid.Row="4" Grid.Column="1" Content="Logo verwenden?" Checked="CheckBox_Checked_1" Unchecked="CheckBox_Checked_1"/>
+            <RadioButton Grid.Row="1" Grid.Column="1" GroupName="2" Content="Mittel" Checked="RadioButton_Checked_1" IsChecked="True"/>
+            <RadioButton Grid.Row="2" Grid.Column="1" GroupName="2" Content="Groß" Checked="RadioButton_Checked_1" />
+            <RadioButton Grid.Row="3" Grid.Column="1" GroupName="2" Content="Sehr Groß(Vorsicht)" Checked="RadioButton_Checked_1" />
+
+
+            <Border BorderThickness="2" BorderBrush="Black" Grid.Row="5" Grid.ColumnSpan="2">
+                <TextBox FontSize="16" TextWrapping="Wrap" MaxLines="30" MaxLength="1273" x:Name="Input" Grid.Row="2" Grid.Column="0"  TextChanged="Input_TextChanged" />
             </Border>
-            <StackPanel x:Name="Contact" Grid.Row="4" Visibility="Hidden">
+            <StackPanel x:Name="Contact" Grid.Row="5" Visibility="Hidden">
                 <Grid Margin="5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>
@@ -136,7 +145,7 @@
                     <TextBox Grid.Column="1" x:Name="TextLand"/>
                 </Grid>
             </StackPanel>
-            <StackPanel x:Name="Wifi" Grid.Row="4" Visibility="Hidden">
+            <StackPanel x:Name="Wifi" Grid.Row="5" Visibility="Hidden">
                 <Grid Margin="5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="150"/>

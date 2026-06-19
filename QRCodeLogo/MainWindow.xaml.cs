@@ -50,6 +50,7 @@ namespace QRCodeLogo
 
         public string mName {  get; set; }
         public string mSsid {  get; set; }
+        public int Logosize { get; set; } = 5;
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Output.Source = null;
@@ -86,7 +87,7 @@ namespace QRCodeLogo
             }
             else if (Type == Types.Normal)
             {
-                 qrCodeData = mQrGenerator.CreateQrCode(QrText, QRCodeGenerator.ECCLevel.H, true);
+                qrCodeData = mQrGenerator.CreateQrCode(QrText, QRCodeGenerator.ECCLevel.H, true);
             }
             else if (Type == Types.Wifi)
             {
@@ -100,30 +101,86 @@ namespace QRCodeLogo
 
             Bitmap logo = new Bitmap(logoFilePath);
 
-            Bitmap qrCodeImage = qrCode.GetGraphic(
-                100,                      // Pixel pro Modul
-                System.Drawing.Color.Black, // Vordergrundfarbe
-                System.Drawing.Color.White, // Hintergrundfarbe
-                logo,                    // Dein Logo-Bitmap
-                iconSizePercent: 20,     // Logo-Größe in % des QR-Codes
-                iconBorderWidth: 1,      // Weißer Rand um das Logo
-                drawQuietZones: true     // Ruhezone um den QR-Code
-            );
+            //Bitmap qrCodeImage = qrCode.GetGraphic(
+            //    100,                      // Pixel pro Modul
+            //    System.Drawing.Color.Black, // Vordergrundfarbe
+            //    System.Drawing.Color.White, // Hintergrundfarbe
+            //    logo,                    // Dein Logo-Bitmap
+            //    iconSizePercent: 20,     // Logo-Größe in % des QR-Codes
+            //    iconBorderWidth: 1,      // Weißer Rand um das Logo
+            //    drawQuietZones: true     // Ruhezone um den QR-Code
+            //);
+
+            Bitmap qrBase = qrCode.GetGraphic(
+                100,
+                System.Drawing.Color.Black,
+                System.Drawing.Color.White,
+                drawQuietZones: true
+                );
+
+            if(mTransparent)
+                qrBase.MakeTransparent(System.Drawing.Color.White);
+            //for (int y = 0; y < qrBase.Height; y++)
+            //{
+            //    for (int x = 0; x < qrBase.Width; x++)
+            //    {
+            //        var pixel = qrBase.GetPixel(x, y);
+
+            //        if (pixel.R == 255 && pixel.G == 255 && pixel.B == 255)
+            //        {
+            //            qrBase.SetPixel(x, y, System.Drawing.Color.Transparent);
+            //        }
+            //    }
+            //}
+            int logoSize = qrBase.Width / Logosize;
+            int pos = (qrBase.Width - logoSize) / 2;
+            int border = 10;
+            if (mTransparent)
+                if (mLogo)
+                    for (int y = pos - border; y < pos + logoSize + border; y++)
+                    {
+                        for (int x = pos - border; x < pos + logoSize + border; x++)
+                        {
+                            if (x >= 0 && x < qrBase.Width && y >= 0 && y < qrBase.Height)
+                            {
+                                qrBase.SetPixel(x, y, System.Drawing.Color.Transparent);
+                            }
+                        }
+                    }
+            Bitmap final = new Bitmap(qrBase.Width, qrBase.Height);
+                using (Graphics g = Graphics.FromImage(final))
+                {
+                    g.DrawImage(qrBase, 0, 0);
+
+                     logoSize = qrBase.Width / Logosize;
+                     pos = (qrBase.Width - logoSize) / 2;
+                    if(mLogo)
+                        if (!mTransparent)
+                            using (System.Drawing.Brush WhiteBrush = new SolidBrush(System.Drawing.Color.White))
+                            {
+                                g.FillRectangle(WhiteBrush, pos, pos, logoSize, logoSize);
+                            }
+
+                    if(mLogo)
+                    g.DrawImage(logo, pos, pos, logoSize, logoSize);
+                }
+
 
 
             byte[] byteArray;
+
             using (MemoryStream ms = new MemoryStream())
             {
-                qrCodeImage.Save(ms, ImageFormat.Bmp);
+                final.Save(ms, ImageFormat.Png);
                 byteArray = ms.ToArray();
             }
 
 
-            var bitmap=BitmapToBitmapSource(qrCodeImage);
+            var bitmap = BitmapToBitmapSource(final);
 
 
-            var Date = DateTime.Now.ToString().Replace(" ", "_").Replace(".","_").Replace(":","_");
-            string fileName="";
+            var Date = DateTime.Now.ToString().Replace(" ", "_").Replace(".", "_").Replace(":", "_");
+            string fileName = "";
 
             if (contact == true)
             {
@@ -272,6 +329,31 @@ namespace QRCodeLogo
             {
                 bitmap.UnlockBits(data);
             }
+        }
+
+        bool mTransparent= false;
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            mTransparent= !mTransparent;
+        }
+
+        private void RadioButton_Checked_1(object sender, RoutedEventArgs e)
+        {
+            var radioButton = (RadioButton)sender;
+            if (radioButton.Content.ToString() == "Groß")
+                Logosize = 4;
+            else if(radioButton.Content.ToString() == "Mittel")
+                Logosize = 5;
+            else if(radioButton.Content.ToString().StartsWith("Sehr Groß"))
+                Logosize = 3;
+
+        }
+        bool mLogo = false;
+
+        private void CheckBox_Checked_1(object sender, RoutedEventArgs e)
+        {
+            mLogo = !mLogo;
         }
     }
 }
