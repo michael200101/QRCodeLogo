@@ -1,4 +1,5 @@
 using QRCoder;
+using Svg;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -42,8 +43,10 @@ namespace QRCodeLogo
         private readonly DispatcherTimer mPreviewTimer;
         private bool mReady;
         private bool mIsDark = true;
-        private const int PreviewPixelsPerModule = 30;
-        private const int SavePixelsPerModule = 100;
+
+        // Output resolution in pixels per QR module, controlled by the quality slider.
+        // Drives both the live preview and the saved PNG, so the preview is WYSIWYG.
+        private int mQuality = 30;
 
         public MainWindow()
         {
@@ -77,18 +80,41 @@ namespace QRCodeLogo
             mPreviewTimer.Start();
         }
 
+        private byte[]? mLastPng;
+
         private void RenderPreview()
         {
             try
             {
-                using Bitmap? composite = BuildComposite(PreviewPixelsPerModule, warnIfLogoMissing: false);
-                if (composite != null)
-                    Output.Source = BitmapToBitmapSource(composite);
+                using Bitmap? composite = BuildComposite(mQuality, warnIfLogoMissing: false);
+                if (composite == null)
+                {
+                    mLastPng = null;
+                    SaveInfoLabel.Text = "Kein Inhalt";
+                    return;
+                }
+
+                Output.Source = BitmapToBitmapSource(composite);
+
+                // Encode once so the preview shows the real file size and Save can reuse it.
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    composite.Save(ms, ImageFormat.Png);
+                    mLastPng = ms.ToArray();
+                }
+                SaveInfoLabel.Text = $"{composite.Width} × {composite.Height} px  ·  {FormatBytes(mLastPng.Length)}";
             }
             catch
             {
                 // Ignore transient errors from incomplete input; keep the last good preview.
             }
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            if (bytes < 1024) return $"{bytes} B";
+            if (bytes < 1024 * 1024) return $"{bytes / 1024.0:0.#} KB";
+            return $"{bytes / (1024.0 * 1024.0):0.##} MB";
         }
 
         // ---- Theme ----
@@ -134,7 +160,7 @@ namespace QRCodeLogo
 
         private LogoItem? mSelectedLogo;
 
-        private static readonly string[] LogoExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
+        private static readonly string[] LogoExtensions = { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".svg" };
 
         private string LogoFolder => Path.Combine(ProjectPath, "Logo");
 
@@ -194,7 +220,7 @@ namespace QRCodeLogo
                 return;
             }
 
-            using Bitmap? composite = BuildComposite(SavePixelsPerModule, warnIfLogoMissing: true);
+            using Bitmap? composite = BuildComposite(mQuality, warnIfLogoMissing: true);
             if (composite == null)
             {
                 MessageBox.Show(
@@ -272,7 +298,12 @@ namespace QRCodeLogo
             if (string.IsNullOrWhiteSpace(payload))
                 return null;
 
-            Bitmap? logo = null;
+            // Resolve the logo source and its intrinsic aspect ratio. SVGs stay as a
+            // document so we can rasterize them at the exact target size (always crisp).
+            SvgDocument? svgDoc = null;
+            Bitmap? rasterLogo = null;
+            int srcW = 0, srcH = 0;
+            bool haveLogo = false;
             if (mLogo)
             {
                 string? logoPath = mSelectedLogo?.Path;
@@ -282,9 +313,21 @@ namespace QRCodeLogo
                         return null; // caller is responsible for telling the user
                     // preview: simply render without a logo
                 }
+                else if (logoPath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+                {
+                    svgDoc = SvgDocument.Open(logoPath);
+                    var dim = svgDoc.GetDimensions();
+                    srcW = (int)Math.Ceiling(dim.Width);
+                    srcH = (int)Math.Ceiling(dim.Height);
+                    if (srcW <= 0 || srcH <= 0) { srcW = 100; srcH = 100; }
+                    haveLogo = true;
+                }
                 else
                 {
-                    logo = new Bitmap(logoPath);
+                    rasterLogo = new Bitmap(logoPath);
+                    srcW = rasterLogo.Width;
+                    srcH = rasterLogo.Height;
+                    haveLogo = true;
                 }
             }
 
@@ -307,23 +350,25 @@ namespace QRCodeLogo
 
             // Fit the logo inside the box while keeping its aspect ratio (no stretching).
             int drawX = pos, drawY = pos, drawW = logoSize, drawH = logoSize;
-            if (logo != null)
+            if (haveLogo)
             {
-                float ratio = Math.Min((float)logoSize / logo.Width, (float)logoSize / logo.Height);
-                drawW = Math.Max(1, (int)Math.Round(logo.Width * ratio));
-                drawH = Math.Max(1, (int)Math.Round(logo.Height * ratio));
+                float ratio = Math.Min((float)logoSize / srcW, (float)logoSize / srcH);
+                drawW = Math.Max(1, (int)Math.Round(srcW * ratio));
+                drawH = Math.Max(1, (int)Math.Round(srcH * ratio));
                 drawX = pos + (logoSize - drawW) / 2;
                 drawY = pos + (logoSize - drawH) / 2;
             }
 
-            if (mTransparent && logo != null)
-                for (int y = drawY - border; y < drawY + drawH + border; y++)
+            // Rasterize SVG at the exact target size; raster logos are scaled at draw time.
+            Bitmap? logo = svgDoc != null ? svgDoc.Draw(drawW, drawH) : rasterLogo;
+
+            // Punch a transparent hole behind the logo (fast block copy, not per-pixel).
+            if (mTransparent && haveLogo)
+                using (Graphics gq = Graphics.FromImage(qrBase))
                 {
-                    for (int x = drawX - border; x < drawX + drawW + border; x++)
-                    {
-                        if (x >= 0 && x < qrBase.Width && y >= 0 && y < qrBase.Height)
-                            qrBase.SetPixel(x, y, System.Drawing.Color.Transparent);
-                    }
+                    gq.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
+                    using var clearBrush = new SolidBrush(System.Drawing.Color.Transparent);
+                    gq.FillRectangle(clearBrush, drawX - border, drawY - border, drawW + 2 * border, drawH + 2 * border);
                 }
 
             Bitmap final = new Bitmap(qrBase.Width, qrBase.Height);
@@ -487,6 +532,14 @@ namespace QRCodeLogo
                 LogoSizeLabel.Text = $"{Math.Round(LogoSizePercent)} % der QR-Breite";
             SchedulePreview();
         }
+
+        private void QualitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            mQuality = (int)Math.Round(e.NewValue);
+            if (QualityValueLabel != null)
+                QualityValueLabel.Text = $"{mQuality} px/Modul";
+            SchedulePreview();
+        }
         bool mLogo = false;
 
         private void CheckBox_Checked_1(object sender, RoutedEventArgs e)
@@ -533,6 +586,9 @@ namespace QRCodeLogo
         {
             try
             {
+                if (path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+                    return LoadSvgThumbnail(path);
+
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad; // read fully, then release the file
@@ -546,6 +602,27 @@ namespace QRCodeLogo
             {
                 return null; // skip unreadable/corrupt images rather than crash the gallery
             }
+        }
+
+        private static ImageSource LoadSvgThumbnail(string path)
+        {
+            var doc = SvgDocument.Open(path);
+            var dim = doc.GetDimensions();
+            int w = 96;
+            int h = dim.Width > 0 ? Math.Max(1, (int)Math.Round(96 * dim.Height / dim.Width)) : 96;
+
+            using var bmp = doc.Draw(w, h);
+            using var ms = new MemoryStream();
+            bmp.Save(ms, ImageFormat.Png);
+            ms.Position = 0;
+
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.StreamSource = ms;
+            image.EndInit();
+            image.Freeze();
+            return image;
         }
     }
 }

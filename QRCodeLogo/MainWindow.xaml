@@ -152,6 +152,11 @@
                             <Slider x:Name="LogoSizeSlider" Minimum="5" Maximum="60" Value="20"
                                     TickFrequency="5" ValueChanged="LogoSizeSlider_ValueChanged"/>
                             <TextBlock x:Name="LogoSizeLabel" Text="20 % der QR-Breite" Style="{StaticResource Muted}" Margin="0,4,0,0"/>
+
+                            <TextBlock Text="Qualität (Auflösung)" Margin="0,14,0,4"/>
+                            <Slider x:Name="QualitySlider" Minimum="10" Maximum="50" Value="30"
+                                    TickFrequency="5" ValueChanged="QualitySlider_ValueChanged"/>
+                            <TextBlock x:Name="QualityValueLabel" Text="30 px/Modul" Style="{StaticResource Muted}" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
 
@@ -187,8 +192,11 @@
                            RenderOptions.BitmapScalingMode="HighQuality"/>
                 </Border>
 
-                <Button Grid.Row="1" Content="Als PNG speichern" Style="{StaticResource PrimaryButton}"
-                        Margin="0,14,0,0" Click="Button_Click"/>
+                <StackPanel Grid.Row="1" Margin="0,14,0,0">
+                    <Button Content="Als PNG speichern" Style="{StaticResource PrimaryButton}" Click="Button_Click"/>
+                    <TextBlock x:Name="SaveInfoLabel" Text="" Style="{StaticResource Muted}"
+                               HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                </StackPanel>
 
                 <!-- Logo gallery -->
                 <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,14,0,0">

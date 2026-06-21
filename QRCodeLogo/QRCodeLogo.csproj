@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="QRCoder" Version="1.7.0" />
+    <PackageReference Include="Svg" Version="3.4.7" />
   </ItemGroup>
 
 
