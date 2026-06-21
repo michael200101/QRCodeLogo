@@ -303,7 +303,14 @@ namespace QRCodeLogo
 
             if (mLogo && mSelectedLogo != null && File.Exists(mSelectedLogo.Path))
             {
-                string injection = BuildSvgLogoMarkup(mSelectedLogo.Path);
+                // QRCoder's viewBox is in module units (e.g. "0 0 37 37"), not pixels —
+                // read it so the logo is placed in the correct coordinate space.
+                double canvas = 37;
+                var vb = System.Text.RegularExpressions.Regex.Match(svg, @"viewBox\s*=\s*""0 0 ([\d.]+) ([\d.]+)""");
+                if (vb.Success)
+                    canvas = double.Parse(vb.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+
+                string injection = BuildSvgLogoMarkup(mSelectedLogo.Path, canvas);
                 if (!string.IsNullOrEmpty(injection))
                 {
                     if (injection.Contains("xlink:"))
@@ -318,8 +325,9 @@ namespace QRCodeLogo
         }
 
         // Builds the SVG fragment for the logo: a tight white backing plus the logo itself,
-        // fitted into the logo box while preserving its aspect ratio (coords in the 0..1000 viewBox).
-        private string BuildSvgLogoMarkup(string path)
+        // fitted into the logo box while preserving its aspect ratio. Coordinates are in the
+        // QR's own viewBox units (canvas × canvas).
+        private string BuildSvgLogoMarkup(string path, double canvas)
         {
             bool isSvg = path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase);
 
@@ -337,10 +345,10 @@ namespace QRCodeLogo
                 srcH = probe.Height;
             }
 
-            double box = 1000.0 * (LogoSizePercent / 100.0);
+            double box = canvas * (LogoSizePercent / 100.0);
             double ratio = Math.Min(box / srcW, box / srcH);
             double w = srcW * ratio, h = srcH * ratio;
-            double x = (1000 - w) / 2, y = (1000 - h) / 2;
+            double x = (canvas - w) / 2, y = (canvas - h) / 2;
             double pad = box * 0.06;
 
             // White backing clears the modules behind the logo and keeps it scannable.
