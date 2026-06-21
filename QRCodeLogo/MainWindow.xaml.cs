@@ -207,8 +207,8 @@ namespace QRCodeLogo
             SchedulePreview();
         }
 
-        // Save the current QR code as a PNG. The preview is always live; this only writes a file.
-        private void Button_Click(object sender, RoutedEventArgs e)
+        // True only if a logo is wanted but none is usable; shows a message and returns true.
+        private bool LogoRequiredButMissing()
         {
             if (mLogo && (mSelectedLogo == null || !File.Exists(mSelectedLogo.Path)))
             {
@@ -217,19 +217,41 @@ namespace QRCodeLogo
                     "Kein Logo ausgewählt",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
-                return;
+                return true;
             }
+            return false;
+        }
+
+        private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
+
+        // Builds the (extension-less) output file name from the current type and inputs.
+        // Assumes BuildPayload has run so mName/mSsid are current.
+        private string BuildFileName()
+        {
+            var date = DateTime.Now.ToString().Replace(" ", "_").Replace(".", "_").Replace(":", "_");
+            string name = Type switch
+            {
+                Types.Contact => "Contact_" + mName + date,
+                Types.Wifi => "Wifi_" + mSsid + date,
+                _ => date,
+            };
+            return string.Join("_", name.Split(InvalidFileNameChars));
+        }
+
+        private static void NothingToSave() =>
+            MessageBox.Show(
+                "Es gibt noch keinen Inhalt zum Speichern.",
+                "Nichts zu speichern",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+        // Save the current QR code as a raster PNG (uses the live, WYSIWYG preview pipeline).
+        private void SavePng_Click(object sender, RoutedEventArgs e)
+        {
+            if (LogoRequiredButMissing()) return;
 
             using Bitmap? composite = BuildComposite(mQuality, warnIfLogoMissing: true);
-            if (composite == null)
-            {
-                MessageBox.Show(
-                    "Es gibt noch keinen Inhalt zum Speichern.",
-                    "Nichts zu speichern",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                return;
-            }
+            if (composite == null) { NothingToSave(); return; }
 
             byte[] byteArray;
             using (MemoryStream ms = new MemoryStream())
@@ -238,20 +260,146 @@ namespace QRCodeLogo
                 byteArray = ms.ToArray();
             }
 
-            var date = DateTime.Now.ToString().Replace(" ", "_").Replace(".", "_").Replace(":", "_");
-            string fileName = Type switch
-            {
-                Types.Contact => "Contact_" + mName + date,
-                Types.Wifi => "Wifi_" + mSsid + date,
-                _ => date,
-            };
-            fileName = string.Join("_", fileName.Split(Path.GetInvalidFileNameChars()));
+            string qrFolder = Path.Combine(ProjectPath, "QR");
+            Directory.CreateDirectory(qrFolder);
+            File.WriteAllBytes(Path.Combine(qrFolder, BuildFileName() + ".png"), byteArray);
+
+            Output.Source = BitmapToBitmapSource(composite);
+        }
+
+        // Save the current QR code as a true vector SVG (infinitely scalable).
+        private void SaveSvg_Click(object sender, RoutedEventArgs e)
+        {
+            if (LogoRequiredButMissing()) return;
+
+            string svg = BuildSvg();
+            if (string.IsNullOrEmpty(svg)) { NothingToSave(); return; }
 
             string qrFolder = Path.Combine(ProjectPath, "QR");
             Directory.CreateDirectory(qrFolder);
-            File.WriteAllBytes(Path.Combine(qrFolder, fileName + ".png"), byteArray);
+            File.WriteAllText(Path.Combine(qrFolder, BuildFileName() + ".svg"), svg);
+        }
 
-            Output.Source = BitmapToBitmapSource(composite);
+        // Produces a vector SVG of the QR code. The logo is injected manually (rather than via
+        // QRCoder's square logo feature) so it keeps its aspect ratio with a tight backing.
+        private string BuildSvg()
+        {
+            string payload = BuildPayload();
+            if (string.IsNullOrWhiteSpace(payload))
+                return "";
+
+            QRCodeData qrCodeData = mQrGenerator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.H, true);
+            var svgQr = new SvgQRCode(qrCodeData);
+
+            // 1000-unit viewBox; the SVG scales to any size without quality loss.
+            string lightColorHex = mTransparent ? "none" : "#ffffff";
+            string svg = svgQr.GetGraphic(
+                new System.Drawing.Size(1000, 1000),
+                "#000000",
+                lightColorHex,
+                drawQuietZones: true,
+                sizingMode: SvgQRCode.SizingMode.ViewBoxAttribute,
+                logo: null);
+
+            if (mLogo && mSelectedLogo != null && File.Exists(mSelectedLogo.Path))
+            {
+                string injection = BuildSvgLogoMarkup(mSelectedLogo.Path);
+                if (!string.IsNullOrEmpty(injection))
+                {
+                    if (injection.Contains("xlink:"))
+                        svg = EnsureXlinkNamespace(svg);
+                    int idx = svg.LastIndexOf("</svg>", StringComparison.OrdinalIgnoreCase);
+                    if (idx >= 0)
+                        svg = svg.Insert(idx, injection);
+                }
+            }
+
+            return svg;
+        }
+
+        // Builds the SVG fragment for the logo: a tight white backing plus the logo itself,
+        // fitted into the logo box while preserving its aspect ratio (coords in the 0..1000 viewBox).
+        private string BuildSvgLogoMarkup(string path)
+        {
+            bool isSvg = path.EndsWith(".svg", StringComparison.OrdinalIgnoreCase);
+
+            double srcW, srcH;
+            if (isSvg)
+            {
+                var dim = SvgDocument.Open(path).GetDimensions();
+                srcW = dim.Width > 0 ? dim.Width : 100;
+                srcH = dim.Height > 0 ? dim.Height : 100;
+            }
+            else
+            {
+                using var probe = new Bitmap(path);
+                srcW = probe.Width;
+                srcH = probe.Height;
+            }
+
+            double box = 1000.0 * (LogoSizePercent / 100.0);
+            double ratio = Math.Min(box / srcW, box / srcH);
+            double w = srcW * ratio, h = srcH * ratio;
+            double x = (1000 - w) / 2, y = (1000 - h) / 2;
+            double pad = box * 0.06;
+
+            // White backing clears the modules behind the logo and keeps it scannable.
+            string rect = FormattableString.Invariant(
+                $"<rect x=\"{x - pad:0.##}\" y=\"{y - pad:0.##}\" width=\"{w + 2 * pad:0.##}\" height=\"{h + 2 * pad:0.##}\" fill=\"#ffffff\" />");
+
+            string logoMarkup = isSvg
+                ? BuildInlineSvgLogo(path, x, y, w, h, srcW, srcH)
+                : BuildRasterImageLogo(path, x, y, w, h);
+
+            return rect + logoMarkup;
+        }
+
+        // Inlines a vector logo as a nested <svg> so it renders everywhere and stays vector.
+        private static string BuildInlineSvgLogo(string path, double x, double y, double w, double h, double srcW, double srcH)
+        {
+            string raw = File.ReadAllText(path);
+            int open = raw.IndexOf("<svg", StringComparison.OrdinalIgnoreCase);
+            int openEnd = open >= 0 ? raw.IndexOf('>', open) : -1;
+            int close = raw.LastIndexOf("</svg>", StringComparison.OrdinalIgnoreCase);
+            if (open < 0 || openEnd < 0 || close <= openEnd || raw[openEnd - 1] == '/')
+                return ""; // malformed or self-closing root
+
+            string openTag = raw.Substring(open, openEnd - open + 1);
+            string inner = raw.Substring(openEnd + 1, close - (openEnd + 1));
+            string viewBox = ExtractAttribute(openTag, "viewBox")
+                             ?? FormattableString.Invariant($"0 0 {srcW} {srcH}");
+
+            return FormattableString.Invariant(
+                $"<svg x=\"{x:0.##}\" y=\"{y:0.##}\" width=\"{w:0.##}\" height=\"{h:0.##}\" viewBox=\"{viewBox}\" preserveAspectRatio=\"xMidYMid meet\">{inner}</svg>");
+        }
+
+        // Embeds a raster logo as a base64 PNG <image>; xlink:href + href for broad compatibility.
+        private static string BuildRasterImageLogo(string path, double x, double y, double w, double h)
+        {
+            string base64;
+            using (var bmp = new Bitmap(path))
+            using (var ms = new MemoryStream())
+            {
+                bmp.Save(ms, ImageFormat.Png);
+                base64 = Convert.ToBase64String(ms.ToArray());
+            }
+            string uri = "data:image/png;base64," + base64;
+            return FormattableString.Invariant(
+                $"<image x=\"{x:0.##}\" y=\"{y:0.##}\" width=\"{w:0.##}\" height=\"{h:0.##}\" preserveAspectRatio=\"xMidYMid meet\" xlink:href=\"{uri}\" href=\"{uri}\" />");
+        }
+
+        private static string? ExtractAttribute(string tag, string attribute)
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(
+                tag, attribute + @"\s*=\s*""([^""]*)""", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return m.Success ? m.Groups[1].Value : null;
+        }
+
+        private static string EnsureXlinkNamespace(string svg)
+        {
+            if (svg.Contains("xmlns:xlink")) return svg;
+            int si = svg.IndexOf("<svg", StringComparison.OrdinalIgnoreCase);
+            return si < 0 ? svg : svg.Insert(si + 4, " xmlns:xlink=\"http://www.w3.org/1999/xlink\"");
         }
 
         // Builds the payload string to encode from the current inputs and selected type.

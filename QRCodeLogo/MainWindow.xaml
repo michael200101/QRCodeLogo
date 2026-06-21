@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QRCodeLogo"
         mc:Ignorable="d"
-        Title="QR-Code Generator" Height="820" Width="1080" MinHeight="640" MinWidth="900"
+        Title="QR-Code Generator" Height="1080" Width="1200" MinHeight="640" MinWidth="900"
         Background="{DynamicResource WindowBg}"
         TextOptions.TextFormattingMode="Ideal">
     <Grid Margin="20">
@@ -193,7 +193,15 @@
                 </Border>
 
                 <StackPanel Grid.Row="1" Margin="0,14,0,0">
-                    <Button Content="Als PNG speichern" Style="{StaticResource PrimaryButton}" Click="Button_Click"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Button Content="Als PNG speichern" Style="{StaticResource PrimaryButton}" Click="SavePng_Click"/>
+                        <Button Grid.Column="2" Content="Als SVG speichern" Style="{StaticResource PrimaryButton}" Click="SaveSvg_Click"/>
+                    </Grid>
                     <TextBlock x:Name="SaveInfoLabel" Text="" Style="{StaticResource Muted}"
                                HorizontalAlignment="Center" Margin="0,6,0,0"/>
                 </StackPanel>
