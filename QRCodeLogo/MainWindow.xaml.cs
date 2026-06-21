@@ -42,7 +42,7 @@ namespace QRCodeLogo
         private readonly DispatcherTimer mPreviewTimer;
         private bool mReady;
         private bool mIsDark = true;
-        private const int PreviewPixelsPerModule = 16;
+        private const int PreviewPixelsPerModule = 30;
         private const int SavePixelsPerModule = 100;
 
         public MainWindow()
@@ -329,8 +329,10 @@ namespace QRCodeLogo
             Bitmap final = new Bitmap(qrBase.Width, qrBase.Height);
             using (Graphics g = Graphics.FromImage(final))
             {
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                g.DrawImage(qrBase, 0, 0);
+                // Draw the QR 1:1 with no resampling so its modules stay crisp.
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                g.DrawImage(qrBase, new Rectangle(0, 0, qrBase.Width, qrBase.Height));
 
                 if (logo != null)
                 {
@@ -340,7 +342,18 @@ namespace QRCodeLogo
                             g.FillRectangle(whiteBrush, drawX - border, drawY - border, drawW + 2 * border, drawH + 2 * border);
                         }
 
-                    g.DrawImage(logo, drawX, drawY, drawW, drawH);
+                    // Highest-quality resampling for the logo; clamp edges to avoid a faint border.
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                    g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+
+                    var destRect = new Rectangle(drawX, drawY, drawW, drawH);
+                    using (var attr = new ImageAttributes())
+                    {
+                        attr.SetWrapMode(System.Drawing.Drawing2D.WrapMode.TileFlipXY);
+                        g.DrawImage(logo, destRect, 0, 0, logo.Width, logo.Height, GraphicsUnit.Pixel, attr);
+                    }
                 }
             }
 
