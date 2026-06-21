@@ -115,7 +115,7 @@ namespace QRCodeLogo
                 }
             }
 
-            ThemeToggleButton.Content = dark ? "☀  Hell" : "🌙  Dunkel";
+            //ThemeToggleButton.Content = dark ? "☀  Hell" : "🌙  Dunkel";
         }
 
         public bool ContactToggle { get; set; }

@@ -24,8 +24,8 @@
                 <TextBlock Text="QR-Code Generator" FontSize="24" FontWeight="Bold"/>
                 <TextBlock Text="Live-Vorschau – Änderungen werden sofort angezeigt" Style="{StaticResource Muted}"/>
             </StackPanel>
-            <Button x:Name="ThemeToggleButton" Grid.Column="1" Content="☀  Hell"
-                    VerticalAlignment="Center" Click="ToggleTheme_Click"/>
+            <!--<Button x:Name="ThemeToggleButton" Grid.Column="1" Content="☀  Hell"
+                    VerticalAlignment="Center" Click="ToggleTheme_Click"/>-->
         </Grid>
 
         <!-- ============ Content ============ -->
